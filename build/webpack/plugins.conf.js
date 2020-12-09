@@ -2,7 +2,7 @@ const fs = require("fs")
 const MiniCssExtractPlugin=require("mini-css-extract-plugin")
 const HtmlWebpackPlugin = require("html-webpack-plugin")
 const getPath = require("./getPath")
-const {entryDir}=MUGlobal.services.viewServer
+const {entry}=MUGlobal.services.viewServer
 const isDevelopment = process.env.NODE_ENV === 'development'? true: false
 let plugins=[]
 if(!isDevelopment){
@@ -16,7 +16,7 @@ function htmlTemplate(page_path){
 		let template=`${page_path}/${item}/index.html`
 		let entryAddr=`${item}/index`
 		let htmlPluginParams={
-			chunks:[entryAddr,'vendor', 'common', 'runtime'],//必须时entry入口的key定义过
+			chunks:[entryAddr,'vendor', 'common'],//必须时entry入口的key定义过
 			filename : item == "index" ? "index.html" : `${entryAddr}.html`, //html位置
 			minify:{
 				collapseWhitespace: true,
@@ -66,7 +66,7 @@ function htmlTemplate(page_path){
 	return htmlArr
 }
 plugins=plugins.concat([
-	...htmlTemplate(entryDir),
+	...htmlTemplate(entry),
 	new MiniCssExtractPlugin({
 		filename: isDevelopment?"[name].[contenthash:8].css":'[name].css',
 		chunkFilename: isDevelopment?"public/css/[id].[hash].css":'public/css/[id].css'

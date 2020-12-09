@@ -1,4 +1,3 @@
-const merge = require('merge')
 let devServer={
 	disableHostCheck: true,
   	contentBase:false,
@@ -20,5 +19,4 @@ let devServer={
 	open:false,
 	stats: { colors: true, chunks: false }
 }
-merge.recursive(devServer,MUGlobal.services.viewServer.devServer)
 module.exports = devServer

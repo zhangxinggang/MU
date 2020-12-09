@@ -2,8 +2,8 @@ const path = require('path')
 module.exports = {
 	services:{
 		viewServer:{
-			outputDir:path.join(process.cwd(),'dist'),
-			entryDir:"./src"
+			output:path.resolve(process.cwd(),'dist'),
+			entry:path.resolve(process.cwd(),"./src/page")
 		}
 	}
 }

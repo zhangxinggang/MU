@@ -63,7 +63,12 @@ var rules=[{
     }]
 },{
     test: /\.svg/,
-    use: ['file-loader']
+    use: [{
+        loader:'file-loader',
+        options:{
+            outputPath: 'public/svg'
+        }
+    }]
 },{
 	test: /\.json$/,
 	exclude:new RegExp('node_modules'),

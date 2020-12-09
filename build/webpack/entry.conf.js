@@ -1,7 +1,7 @@
 const getPath = require("./getPath")
-const {entryDir}=MUGlobal.services.viewServer
-const entry = {}
-getPath(entryDir).map((item)=>{
-	entry[`${item}/index`] = `${entryDir}/${item}/index.js`
+const {entry}=MUGlobal.services.viewServer
+let entrys={}
+getPath(entry).map((item)=>{
+	entrys[`${item}/index`] = `${entry}/${item}/index.js`
 });
-module.exports = entry
+module.exports = entrys
