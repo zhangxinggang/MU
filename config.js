@@ -3,7 +3,10 @@ module.exports = {
 	services:{
 		viewServer:{
 			output:path.resolve(process.cwd(),'dist'),
-			entry:path.resolve(process.cwd(),"./src/page")
+			entry:{
+				index:path.resolve(process.cwd(),"./src/pages/index/index.js"),
+				vue:path.resolve(process.cwd(),"./src/pages/vue/index.js")
+			}
 		}
 	}
 }

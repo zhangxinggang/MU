@@ -1,19 +1,18 @@
-const UglifyJsPlugin = require("uglifyjs-webpack-plugin")
 const TerserPlugin = require('terser-webpack-plugin')
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin")
 module.exports={
 	minimizer: [//压缩js
 		new TerserPlugin({
-			sourceMap: true, // Must be set to true if using source-maps in production
 			terserOptions: {
 				output: {
-					comments: false,
+					comments: false
+				},
+				compress: {
+					drop_console: true
 				}
-			}
-		}),
-		new UglifyJsPlugin({
-			cache: true,
-			parallel: true,
+			},
+			cache: true, // 是否缓存
+			parallel: true, // 是否并行打包
 			sourceMap: false
 		}),
 		new OptimizeCSSAssetsPlugin({})

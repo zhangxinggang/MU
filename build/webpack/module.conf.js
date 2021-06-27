@@ -1,42 +1,53 @@
 const MiniCssExtractPlugin=require("mini-css-extract-plugin")
 const isDevelopment = process.env.NODE_ENV === 'development'? true: false
-var rules=[{
-    test:/\.(js|jsx)/,
-	exclude:new RegExp('node_modules'),
-    use: {
-        loader:"babel-loader",
-        options:{
-            presets: [
-                "@babel/preset-env",
-                "@babel/preset-react",
-                {
-                    "plugins": 
-                    [
-                        "@babel/plugin-proposal-class-properties"
-                    ]
-                } //这句很重要 不然箭头函数出错
-            ], 
-        }
-    }
+//常用loader分开写，好被外面覆盖
+let cssCommonLoader=(lastLoaderName)=>{
+    let loaders=[
+        isDevelopment?"style-loader":MiniCssExtractPlugin.loader,
+        "css-loader"
+    ]
+    lastLoaderName && loaders.push(`${lastLoaderName}-loader`)
+    return loaders
+}
+let jsCommonLoader={
+	loader:"babel-loader",
+	options:{
+		presets: [
+			"@babel/preset-env",
+			"@babel/preset-react",
+			{
+				"plugins":[
+					"@babel/plugin-proposal-class-properties"//这句很重要 不然箭头函数出错
+				]
+			}
+		] 
+	}
+}
+let rules=[{
+    test: /\.vue$/,
+    use: [{
+        loader: 'vue-loader'
+    }]
+},{
+    test:/\.js$/,
+    use: jsCommonLoader
+},{
+    test:/\.jsx$/,
+    use: jsCommonLoader
 },{
     test: /\.less$/,
-    exclude:new RegExp('node_modules'),
-    use: [
-        isDevelopment?'style-loader':MiniCssExtractPlugin.loader,
-        'css-loader',
-        'less-loader'
-    ]
+    use: cssCommonLoader('less')
 },{
-    test: /\.(sa|sc|c)ss$/,
-    exclude:new RegExp('node_modules'),
-    use:[
-        isDevelopment?'style-loader':MiniCssExtractPlugin.loader,
-        'css-loader',
-        'sass-loader'
-    ]
+    test: /\.sass$/,
+    use: cssCommonLoader('sass')
+},{
+    test: /\.scss$/,
+    use: cssCommonLoader('sass')
+},{
+    test: /\.css$/,
+    use:cssCommonLoader()
 },{
     test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
-    exclude:new RegExp('node_modules'),
     use:[{
         loader: 'url-loader',
         options: {
@@ -46,11 +57,16 @@ var rules=[{
     }]
 },{
     test: /\.(woff|woff2?|eot|ttf|otf)$/,
-    exclude:new RegExp('node_modules'),
-	loader: 'url-loader?limit=10240&name=public/fonts/[name].[ext]'
+    use: [{
+        loader: "url-loader",
+        options: {
+            name: "public/fonts/[name].[ext]",
+            limit: 5000,
+            outputPath: "static/fonts"
+        }
+    }]
 },{
     test: /\.(png|jpe?g|gif)$/,
-    exclude:new RegExp('node_modules'),
     use: [{
         loader: 'url-loader',
         options:{
@@ -70,10 +86,19 @@ var rules=[{
         }
     }]
 },{
-	test: /\.json$/,
-	exclude:new RegExp('node_modules'),
-	loader: 'json-loader',
+    test: /\.(ico)$/,
+    use: [{
+        loader: 'url-loader',
+        options: {
+            limit: 10,
+            name: '[name].[ext]',
+            outputPath: "static/icon"
+        }
+    }],
 }];
+rules.forEach(item=>{
+    item.exclude=new RegExp('node_modules')
+})
 module.exports={
 	rules:rules
 }
