@@ -1,75 +1,89 @@
-const fs = require("fs")
-const MiniCssExtractPlugin=require("mini-css-extract-plugin")
-const HtmlWebpackPlugin = require("html-webpack-plugin")
-const getPath = require("./getPath")
-const {entry}=MUGlobal.services.viewServer
-const isDevelopment = process.env.NODE_ENV === 'development'? true: false
-let plugins=[]
-if(!isDevelopment){
-	let {CleanWebpackPlugin}=require('clean-webpack-plugin')
-	plugins.push(new CleanWebpackPlugin())
+const fs = require("fs");
+const path = require("path");
+const webpack = require("webpack");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { VueLoaderPlugin } = require("vue-loader");
+const isProduction = global.MUGlobal.isProduction;
+let project = global.MUGlobal.project || {};
+
+function htmlTemplate(entry) {
+    let htmlArr = [];
+    let entrys = Object.keys(entry);
+    entrys.forEach(async (item) => {
+        let entryItem = entry[item];
+        let entryType = Object.prototype.toString.call(entryItem);
+        let template = "";
+        let chunks = [item, "chunk-vendors", "chunk-common"];
+        if (entryItem.dependOn) {
+            let dependOnType = typeof entryItem.dependOn;
+            if (dependOnType === "object") {
+                chunks = chunks.concat(entryItem.dependOn);
+            } else {
+                chunks.unshift(entryItem.dependOn);
+            }
+        }
+        let filename = `${item}.html`;
+        if (entryType === "[object Array]") {
+            template = path.resolve(entryItem[0], "../index.html");
+        } else if (entryType === "[object Object]") {
+            let entryHtml = entryItem["import"];
+            let entryItemImportType = Object.prototype.toString.call(entryHtml);
+            if (entryItemImportType === "[object Array]") {
+                entryHtml = entryHtml[0];
+            }
+            template = entryItem.template || path.resolve(entryHtml, "../index.html");
+            chunks = entryItem.chunks || chunks;
+        } else {
+            template = path.resolve(entryItem, "../index.html");
+        }
+        let htmlPluginParams = null;
+        try {
+            fs.accessSync(template);
+            htmlPluginParams = { chunks, filename, template };
+        } catch (err) {
+            template = path.resolve(process.cwd(), "public/index.html");
+            try {
+                fs.accessSync(template);
+                htmlPluginParams = { chunks, filename, template };
+            } catch (err) {}
+        }
+        htmlPluginParams && htmlArr.push(new HtmlWebpackPlugin(htmlPluginParams));
+    });
+    return htmlArr;
 }
-function htmlTemplate(page_path){
-	let htmlArr = []
-	let paths=getPath(page_path)
-	paths.map(async (item)=>{
-		let template=`${page_path}/${item}/index.html`
-		let entryAddr=`${item}/index`
-		let htmlPluginParams={
-			chunks:[entryAddr,'vendor', 'common'],//必须时entry入口的key定义过
-			filename : item == "index" ? "index.html" : `${entryAddr}.html`, //html位置
-			minify:{
-				collapseWhitespace: true,
-				preserveLineBreaks: true
-			}
-		}
-		try{
-			fs.accessSync(template)
-			htmlPluginParams['template']=template
-		}catch(err){
-			htmlPluginParams['templateContent']=`<!doctype html>
-			<html>
-				<head>
-					<style>
-						::-webkit-scrollbar{
-							width:10px;
-						}
-						::-webkit-scrollbar-track{
-							background:rgb(239,239,239);
-						}
-						::-webkit-scrollbar-thumb{
-							background: #bfbfbf;
-							border-radius: 4px;
-						}
-						::-webkit-scrollbar-thumb:hover{
-							background: #333;
-						}
-						*{
-							margin:0;
-							padding:0;
-							box-sizing:border-box;
-						}
-						html,body,#app{
-							width:100%;
-							height:100%;
-						}
-					</style>
-					<meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1.0">
-				</head>
-				<body>
-					<div id=app></div>
-				</body>
-			</html>`
-		}
-		htmlArr.push(new HtmlWebpackPlugin(htmlPluginParams))
-	});
-	return htmlArr
+function dealEntry(viewServer) {
+    let { entry } = viewServer;
+    let dproject = {};
+    for (let key in project) {
+        let value = project[key];
+        let isObject = Object.prototype.toString.call(value) == "[object Object]" || Object.prototype.toString.call(value) == "[object Array]";
+        value = isObject ? JSON.stringify(value) : value;
+        dproject["PROJECT." + key] = `'${value}'`;
+    }
+    let plugins = [new webpack.DefinePlugin(dproject), new webpack.ProgressPlugin()];
+    if (!isProduction) {
+        let { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
+        let analyzer = global.MUGlobal.dev.analyzer.find((item) => !item.haveUse);
+        analyzer.haveUse = true;
+        plugins.push(
+            new BundleAnalyzerPlugin({
+                openAnalyzer: false,
+                analyzerPort: analyzer.port,
+            })
+        );
+    }
+    const entryPlugins = htmlTemplate(entry);
+    if (entryPlugins.length) {
+        plugins = plugins.concat([
+            ...entryPlugins,
+            new MiniCssExtractPlugin({
+                filename: isProduction ? "[name].[contenthash:8].css" : "[name].css",
+                chunkFilename: isProduction ? "public/css/[id].[hash].css" : "public/css/[id].css",
+            }),
+            new VueLoaderPlugin(),
+        ]);
+    }
+    return plugins;
 }
-plugins=plugins.concat([
-	...htmlTemplate(entry),
-	new MiniCssExtractPlugin({
-		filename: isDevelopment?"[name].[contenthash:8].css":'[name].css',
-		chunkFilename: isDevelopment?"public/css/[id].[hash].css":'public/css/[id].css'
-	})
-])
-module.exports=plugins
+module.exports = dealEntry;
